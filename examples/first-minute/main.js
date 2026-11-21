@@ -1,4 +1,5 @@
 import './experiment-replay.js';
+import { resetRecovery } from './recovery.js';
 import { claimAnswer, clearPendingAnswer, updateRecord } from './attempt-store.js';
 import { createEventDelivery } from './event-delivery.js';
 import flagsmith from '@flagsmith/flagsmith';
@@ -219,23 +220,24 @@ async function begin(forcePractice = false) {
     }
 }
 
-function updateCapacity() {
-    const connections = Number($('connections').value);
-    const capacity = connections * 20; // One connection completes 1000 / 50 requests per second.
-    const balance = capacity - 100;
-    const outcome =
-        balance < 0
-            ? `Queue grows by ${-balance} requests/s.`
-            : balance === 0
-              ? 'Demand matches capacity, leaving no headroom.'
-              : `${balance} requests/s of spare capacity.`;
-    $('pool-value').value = String(connections);
-    $('capacity-outcome').textContent = `${capacity} requests/s capacity. ${outcome}`;
-}
-$('connections').oninput = updateCapacity;
-
 function showDelivery(record) {
-    if (!displayed?.measured || displayed.deadline !== record.deadline) return;
+    if (!displayed || displayed.measured !== record.measured || displayed.deadline !== record.deadline) return;
+    const desk = displayed.layout === 'guided' ? 'guided' : 'standard';
+    $('receipt-events').hidden = !displayed.measured;
+    $('receipt-context').textContent = displayed.measured
+        ? `The triage_guide flag assigned the ${desk} desk on your first attempt.`
+        : `You played the ${desk} desk in practice. This round sends no participant events.`;
+    if (!displayed.measured) return;
+    const delivery = record.delivery || {};
+    const status = (name) =>
+        delivery[name] ? 'Accepted by Flagsmith' : delivery.expired ? 'Delivery window closed' : 'Awaiting receipt';
+    $('receipt-exposure').textContent = status('$flag_exposure');
+    $('receipt-conversion').textContent =
+        displayed.answer === 'pool'
+            ? status('drill_resolved')
+            : displayed.answer === 'expired'
+              ? 'No event · time expired'
+              : 'No event · incorrect first answer';
     let message = '';
     if (record.delivery?.expired) {
         message = 'Flagsmith’s event delivery window has closed. Your drill result is saved on this device.';
@@ -251,6 +253,7 @@ function displayResult(attempt) {
     active = null;
     displayed = attempt;
     $('delivery-status').hidden = true;
+    $('round-receipt').open = false;
     showDelivery(attempt);
     lastLayout = attempt.layout;
     const timedOut = attempt.answer === 'expired';
@@ -261,8 +264,7 @@ function displayResult(attempt) {
     $('result').hidden = false;
     const heading = timedOut ? 'Time expired.' : correct ? 'Root cause found.' : 'Look at the connection queue.';
     $('verdict').textContent = heading;
-    $('connections').value = 4;
-    updateCapacity();
+    resetRecovery();
     $('outcome').textContent =
         seconds + 's elapsed · ' + (attempt.layout === 'guided' ? 'Guided desk' : 'Standard desk');
     $('replay').onclick = () => begin(true);

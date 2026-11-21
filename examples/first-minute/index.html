@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
     <head>
         <meta charset="utf-8" />
@@ -93,21 +93,44 @@
                     <p>2,650 ms waiting for a connection · 216 ms other work</p>
                 </div>
                 <section class="capacity" aria-labelledby="capacity-title">
-                    <div>
-                        <h3 id="capacity-title">Could a larger pool keep up?</h3>
+                    <div class="capacity-controls">
+                        <h3 id="capacity-title">Can you drain the queue?</h3>
                         <p>
-                            Model one worker receiving 100 requests per second. Each request holds a connection for 50
-                            ms. Move the pool limit to see when the queue grows.
+                            At 30 seconds, 600 checkouts are waiting. Choose a new pool limit and see what happens over
+                            the next 30 seconds.
                         </p>
-                    </div>
-                    <div>
-                        <label for="connections">Pool limit <output id="pool-value" for="connections">4</output></label>
+                        <label for="connections"
+                            >Connections per worker <output id="pool-value" for="connections">4</output></label
+                        >
                         <input id="connections" type="range" min="1" max="40" value="4" />
-                        <p id="capacity-outcome" aria-live="polite"></p>
+                        <p id="capacity-outcome" role="status"></p>
+                        <details class="model-assumptions">
+                            <summary>Model assumptions</summary>
+                            <p>
+                                One worker receives 100 requests per second. Each holds a connection for 50 ms. The
+                                queue starts empty with four connections, and the new limit takes effect at 30 seconds.
+                                Arrivals and service are steady throughout this model.
+                            </p>
+                        </details>
                     </div>
+                    <figure class="recovery-graph">
+                        <figcaption>Modelled checkouts waiting</figcaption>
+                        <canvas id="queue-chart" role="img" aria-label="Queue comparison over 60 seconds"></canvas>
+                        <div class="queue-legend"><span>Keep four connections</span><span>Selected pool</span></div>
+                    </figure>
                 </section>
                 <p id="outcome"></p>
                 <p id="delivery-status" role="status" hidden></p>
+                <details class="round-receipt" id="round-receipt">
+                    <summary>How this round was counted</summary>
+                    <p id="receipt-context"></p>
+                    <dl id="receipt-events" hidden>
+                        <dt>Desk exposure</dt>
+                        <dd id="receipt-exposure"></dd>
+                        <dt>Correct diagnosis <code>drill_resolved</code></dt>
+                        <dd id="receipt-conversion"></dd>
+                    </dl>
+                </details>
                 <button class="primary" id="replay">Practise again →</button>
                 <button class="link" id="switch-layout">Try the other desk</button>
                 <button class="link" id="show-experiment" aria-haspopup="dialog">View experiment results</button>

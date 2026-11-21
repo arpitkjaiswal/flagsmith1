@@ -387,12 +387,53 @@ test('an expired receipt stops retries and keeps the original local verdict', as
     await page.goto('/');
     await expect(page.locator('#verdict')).toHaveText('Root cause found.');
     await expect(page.locator('#delivery-status')).toContainText('delivery window has closed');
+    await page.locator('#round-receipt summary').click();
+    await expect(page.locator('#receipt-exposure')).toHaveText('Accepted by Flagsmith');
+    await expect(page.locator('#receipt-conversion')).toHaveText('Delivery window closed');
     await page.reload();
     await expect(page.locator('#delivery-status')).toContainText('delivery window has closed');
     await page.clock.install();
     await page.evaluate(() => window.dispatchEvent(new Event('online')));
     await page.clock.fastForward(61000);
     expect(attempts.map((event) => event.event)).toEqual(['drill_resolved']);
+});
+
+test('the recovery model and the event receipt explain a completed drill', async ({ page, context }) => {
+    const events = await interceptSdk(context);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/');
+    await expect(page.locator('#mode')).toHaveText('Connected to Flagsmith');
+    await page.locator('#start').click();
+    await expect(page.locator('#capacity-title')).toBeHidden();
+    await page.locator('input[value=pool]').check();
+    await page.locator('#submit').click();
+    await expect(page.locator('#verdict')).toHaveText('Root cause found.');
+    await page.locator('#round-receipt summary').click();
+    await expect(page.locator('#receipt-context')).toContainText('assigned the guided desk');
+    await expect(page.locator('#receipt-exposure')).toHaveText('Accepted by Flagsmith');
+    await expect(page.locator('#receipt-conversion')).toHaveText('Accepted by Flagsmith');
+
+    const pool = page.getByRole('slider', { name: 'Connections per worker' });
+    await expect(page.locator('#capacity-outcome')).toContainText('1,200 waiting at 60 s');
+    await pool.focus();
+    await pool.press('ArrowRight');
+    await expect(page.locator('#capacity-outcome')).toContainText('600 waiting at 60 s');
+    for (let i = 0; i < 3; i++) await pool.press('ArrowRight');
+    await expect(page.locator('#capacity-outcome')).toHaveText(
+        '0 waiting at 60 s. The queue clears in 10 s after the change.',
+    );
+    await expect(page.locator('#queue-chart')).toHaveAccessibleName(/With 8 connections, 0 wait/);
+    await pool.press('Home');
+    await expect(page.locator('#capacity-outcome')).toContainText('3,000 waiting at 60 s');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+
+    await page.locator('#switch-layout').click();
+    await page.locator('input[value=pool]').check();
+    await page.locator('#submit').click();
+    await page.locator('#round-receipt summary').click();
+    await expect(page.locator('#receipt-context')).toContainText('standard desk in practice');
+    await expect(page.locator('#receipt-events')).toBeHidden();
+    expect(events.map((e) => e.event)).toEqual(['$flag_exposure', 'drill_resolved']);
 });
 
 test('a failed first-desk write keeps the solution hidden until storage recovers', async ({ page, context }) => {
