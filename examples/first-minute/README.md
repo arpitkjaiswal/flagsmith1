@@ -8,11 +8,11 @@ A 60-second incident drill that tests whether a short runbook helps people diagn
 
 ## Play
 
-For a no-install practice round, [download the drill](https://raw.githubusercontent.com/Flagsmith/flagsmith/9bb2729ac55412438c87d9566d0bfc925e32bd16/examples/first-minute/media/first-minute.zip), unzip it and open `first-minute.html`. In the debrief, change the pool size halfway through a simulated incident and see when 600 waiting checkouts clear. **How this round was counted** shows the desk and the SDK event receipts for a participant, or why a practice round was excluded.
+For a no-install practice round, [download the drill](https://raw.githubusercontent.com/Flagsmith/flagsmith/96a147f90ce18d37e790791a21dc6ad5fefd3295/examples/first-minute/media/first-minute.zip), unzip it and open `first-minute.html`. In the debrief, change the pool size halfway through a simulated incident and see when 600 waiting checkouts clear. **How this round was counted** shows the desk and the SDK event receipts for a participant, or why a practice round was excluded.
 
 To run from source, run `npm ci` and `npm run dev` with Node 24. Open the address Vite prints. Without a client-side environment key, the drill runs in practice mode. To make a portable, offline copy, run `npm run build:practice` and open `dist/first-minute.html`. Finish a round and choose **Try the other desk** to compare the layouts.
 
-The download is pinned to the commit that packaged it. Its SHA-256 is `484974149334f5aa52d18fbea95fb9ef6037c644e5cd9fa1576b17ae3355d86e`. To reproduce `media/first-minute.zip`, run `npm run package:practice` with Node 24 and Python 3 installed. When publishing a new archive, update both README links to its commit and record its checksum here.
+The download is pinned to the commit that packaged it. Its SHA-256 is `aaf5a009cb65b4c8f1bf0d75adf71908beabb2cf8ac5d060b6f89a7dc2689f01`. To reproduce `media/first-minute.zip`, run `npm run package:practice` with Node 24 and Python 3 installed. When publishing a new archive, update both README links to its commit and record its checksum here.
 
 ## Run the experiment locally
 
