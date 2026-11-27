@@ -515,3 +515,65 @@ test('standalone practice still excludes later enrolment when localStorage is un
     await expect(page.locator('#verdict')).toHaveText('Root cause found.');
     expect(events).toEqual([]);
 });
+
+test('a participant sees both rehearsal decisions only after their first diagnosis', async ({ page, context }) => {
+    await interceptSdk(context);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/');
+    await expect(page.locator('#mode')).toHaveText('Connected to Flagsmith');
+    await expect(page.locator('#method')).toBeHidden();
+    await page.locator('#start').click();
+    await page.reload();
+    await expect(page.locator('#desk')).toBeVisible();
+    await expect(page.locator('#method')).toBeHidden();
+    await page.locator('input[value=provider]').check();
+    await page.locator('#submit').click();
+    await expect(page.locator('#diagnosis-feedback')).toContainText('Payment authorisation increased by just 4 ms');
+    const pool = page.locator('#connections');
+    await pool.focus();
+    for (let i = 0; i < 4; i++) await pool.press('ArrowRight');
+    const handoff = decodeURIComponent(
+        (await page.locator('#handoff').getAttribute('href')).split(',').slice(1).join(','),
+    );
+    expect(handoff).toContain('First diagnosis: The external payment provider slowed down.');
+    expect(handoff).toContain('8 connections per worker');
+    expect(handoff).toContain('clears in 10 s');
+
+    await page.locator('#method').click();
+    await expect(page.locator('#result-bars')).toContainText('85 of 113');
+    await page.getByRole('button', { name: 'Rollout', exact: true }).click();
+    await expect(page.locator('#rollout-checks')).toHaveText('16 / 16');
+    await page.getByRole('button', { name: /Equal chances/ }).click();
+    await expect(page.locator('#rollout-checks')).toHaveText('50 / 50');
+    await expect(page.locator('#rollout-description')).toContainText('interval includes zero');
+    await page.getByRole('button', { name: 'Results', exact: true }).click();
+    await expect(page.locator('#result-bars')).toContainText('70 of 124');
+    await expect(page.locator('#win-chance')).toHaveText('36.5%');
+    await expect(page.locator('#download-results')).toHaveAttribute('download', 'first-minute-equal-chance.json');
+    const exported = await page.locator('#download-results').evaluate(async (link) => (await fetch(link.href)).json());
+    expect(exported.decision.supported_desk).toBeNull();
+    expect(exported.variants.control).toEqual({ exposed: 116, converted: 68 });
+    expect(await page.locator('#notes').evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#method')).toBeFocused();
+});
+
+test('previewing offline results before playing excludes a later live first attempt on the same site', async ({
+    page,
+    context,
+}) => {
+    const events = await interceptSdk(context);
+    await page.route('**/offline-practice.html', (route) =>
+        route.fulfill({ contentType: 'text/html', path: 'dist/first-minute.html' }),
+    );
+    await page.goto('/offline-practice.html');
+    await page.locator('#method').click();
+    await expect(page.locator('#notes')).toBeVisible();
+    await page.goto('/');
+    await page.locator('#start').click();
+    await expect(page.locator('#mode')).toHaveText('Practice · excluded from experiment');
+    await page.locator('input[value=pool]').check();
+    await page.locator('#submit').click();
+    await expect(page.locator('#verdict')).toBeVisible();
+    expect(events).toEqual([]);
+});

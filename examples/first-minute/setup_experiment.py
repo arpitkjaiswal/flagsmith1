@@ -9,7 +9,15 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urljoin, urlsplit
 from urllib.request import Request, urlopen
 
-BASE = "http://127.0.0.1:8000/api/v1/"
+port = os.environ.get("FLAGSMITH_LOCAL_PORT", "8000")
+if not port.isdecimal() or not 1 <= int(port) <= 65535:
+    raise SystemExit("FLAGSMITH_LOCAL_PORT must be between 1 and 65535.")
+LOCAL_PORT = int(port)
+BASE = f"http://127.0.0.1:{LOCAL_PORT}/api/v1/"
+PROJECT_NAME = "First Minute"
+PARTICIPANT_ENVIRONMENT = "Participant drill"
+METRIC_NAME = "First attempt resolved within 60 seconds"
+EXPERIMENT_NAME = "Can a runbook help on-call responders?"
 
 
 class RateLimited(SystemExit):
@@ -50,7 +58,7 @@ def request(path, data=None, *, method=None):
         ) from error
     except (URLError, TimeoutError) as error:
         raise SystemExit(
-            "Could not reach local Flagsmith at http://127.0.0.1:8000/. Check that Docker Compose is running."
+            f"Could not reach local Flagsmith on port {LOCAL_PORT}. Check that Docker Compose is running."
         ) from error
 
 
@@ -132,12 +140,22 @@ def check_enrolment(experiment):
         )
 
 
+def check_metric(metric):
+    if (
+        metric["aggregation"] != "occurrence"
+        or metric["direction"] != "up"
+        or metric["definition"].get("event") != "drill_resolved"
+    ):
+        raise SystemExit(
+            "The existing first-attempt metric must count occurrences of drill_resolved with upward direction."
+        )
+
+
 def prepare_experiment(org_id, environment_name, *, resume_paused=False):
-    project_name = "First Minute"
     project = ensure(
         "projects/",
-        {"name": project_name, "organisation": org_id},
-        lambda p: p["name"] == project_name and p["organisation"] == org_id,
+        {"name": PROJECT_NAME, "organisation": org_id},
+        lambda p: p["name"] == PROJECT_NAME and p["organisation"] == org_id,
     )
     pid = project["id"]
     env = ensure(
@@ -190,31 +208,22 @@ def prepare_experiment(org_id, environment_name, *, resume_paused=False):
         raise SystemExit(
             "The existing guided variation must serve the string 'guided'."
         )
-    name = "First attempt resolved within 60 seconds"
     metric = ensure(
         root + "experiment-metrics/",
         {
-            "name": name,
+            "name": METRIC_NAME,
             "direction": "up",
             "aggregation": "occurrence",
             "definition": {"version": 1, "event": "drill_resolved"},
         },
-        lambda m: m["name"] == name,
+        lambda m: m["name"] == METRIC_NAME,
     )
-    if (
-        metric["aggregation"] != "occurrence"
-        or metric["direction"] != "up"
-        or metric["definition"].get("event") != "drill_resolved"
-    ):
-        raise SystemExit(
-            "The existing first-attempt metric must count occurrences of drill_resolved with upward direction."
-        )
-    name = "Can a runbook help on-call responders?"
+    check_metric(metric)
     path = root + "experiments/"
     experiment = ensure(
         path,
         {
-            "name": name,
+            "name": EXPERIMENT_NAME,
             "feature": flag["id"],
             "hypothesis": "A three-step runbook increases first-attempt correct diagnoses within 60 seconds.",
             "metrics": [{"metric": metric["id"], "expected_direction": "increase"}],
@@ -230,7 +239,7 @@ def prepare_experiment(org_id, environment_name, *, resume_paused=False):
                 ],
             },
         },
-        lambda e: e["name"] == name,
+        lambda e: e["name"] == EXPERIMENT_NAME,
     )
     detail = path + str(experiment["id"]) + "/"
     experiment = request(detail)
@@ -253,7 +262,7 @@ def prepare_experiment(org_id, environment_name, *, resume_paused=False):
 
 def setup(org_id):
     env, _, _, detail = prepare_experiment(
-        org_id, "Participant drill", resume_paused=True
+        org_id, PARTICIPANT_ENVIRONMENT, resume_paused=True
     )
     experiment = request(detail)
     if experiment["status"] != "running":
@@ -265,9 +274,8 @@ def setup(org_id):
     # Only the client-side environment key belongs in a browser configuration.
     print("VITE_FLAGSMITH_ENVIRONMENT_ID=" + env["api_key"])
     print(
-        "VITE_FLAGSMITH_DASHBOARD_URL=http://localhost:8000/project/{}/environment/{}/experiments/{}".format(
-            env["project"], env["api_key"], experiment["id"]
-        )
+        f"VITE_FLAGSMITH_DASHBOARD_URL=http://localhost:{LOCAL_PORT}"
+        f"/project/{env['project']}/environment/{env['api_key']}/experiments/{experiment['id']}"
     )
 
 

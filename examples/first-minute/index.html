@@ -11,7 +11,7 @@
         <header>
             <div class="shell brandbar">
                 <a class="brand" href="#briefing"><span class="mark" aria-hidden="true">∿</span> First Minute</a
-                ><button class="link" id="method" aria-haspopup="dialog">Experiment replay</button>
+                ><button class="link" id="method" aria-haspopup="dialog" hidden>Experiment replay</button>
             </div>
         </header>
         <main class="shell" id="briefing" tabindex="-1">
@@ -79,10 +79,7 @@
             <section id="result" hidden tabindex="-1">
                 <div class="kicker">INCIDENT DEBRIEF</div>
                 <h2 id="verdict"></h2>
-                <p>
-                    Release 8.4 cut the connection pool from 40 to 4. Requests waited 2.65 seconds for a connection
-                    while queries and payment authorisations stayed fast.
-                </p>
+                <p id="diagnosis-feedback"></p>
                 <div class="trace">
                     <div class="kicker">SLOW REQUEST · 2,866 MS</div>
                     <div
@@ -119,6 +116,7 @@
                         <div class="queue-legend"><span>Keep four connections</span><span>Selected pool</span></div>
                     </figure>
                 </section>
+                <a id="handoff" download="first-minute-incident-handoff.txt">Download incident handoff</a>
                 <p id="outcome"></p>
                 <p id="delivery-status" role="status" hidden></p>
                 <details class="round-receipt" id="round-receipt">
@@ -159,7 +157,12 @@
         <dialog id="notes" aria-labelledby="replay-title">
             <form method="dialog"><button class="close" aria-label="Close experiment replay">×</button></form>
             <div class="kicker">FLAGSMITH EXPERIMENT REPLAY</div>
-            <h2 id="replay-title">Does a runbook help?</h2>
+            <h2 id="replay-title">When would you ship the runbook?</h2>
+            <fieldset class="rehearsal-picker">
+                <legend>Compare two synthetic experiments</legend>
+                <div id="scenarios"></div>
+                <p>Bars show the 95% credible interval for relative lift. The vertical mark is zero.</p>
+            </fieldset>
             <p id="replay-source"></p>
             <div class="replay-stages" role="group" aria-label="Rehearsal stages">
                 <button aria-controls="assignment" aria-pressed="false">Assignment</button>
@@ -192,7 +195,7 @@
             <section id="rollout" class="replay-stage" hidden>
                 <h3>What did the flag serve next?</h3>
                 <div class="rollout-check">
-                    <div><strong id="rollout-checks"></strong><span>SDK checks passed after rollout</span></div>
+                    <div><strong id="rollout-checks"></strong><span id="rollout-label"></span></div>
                 </div>
                 <p id="rollout-description"></p>
                 <p>

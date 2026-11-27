@@ -6,7 +6,7 @@ import { createFlagsmithInstance } from '@flagsmith/flagsmith/isomorphic';
 
 const { action, environment, experiment, total, rates, winner } = JSON.parse(readFileSync(0, 'utf8'));
 const client = createFlagsmithInstance();
-const base = 'http://127.0.0.1:8000/api/';
+const base = `http://127.0.0.1:${Number(process.env.FLAGSMITH_LOCAL_PORT ?? 8000)}/api/`;
 const counts = { control: { exposed: 0, converted: 0 }, guided: { exposed: 0, converted: 0 } };
 const identityPrefix = `first-minute-rehearsal-${experiment}-${action}${action === 'verify' ? '-' + randomUUID() : ''}`;
 

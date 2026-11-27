@@ -1,0 +1,39 @@
+{
+  "traffic": "synthetic",
+  "as_of": "2026-11-26T12:59:37.261957Z",
+  "experiment_id": 3,
+  "flag": "triage_guide",
+  "metric": "drill_resolved",
+  "configured_split": {
+    "control": 50,
+    "guided": 50
+  },
+  "simulated_success_rates": {
+    "control": 0.55,
+    "guided": 0.55
+  },
+  "variants": {
+    "guided": {
+      "exposed": 124,
+      "converted": 70.0
+    },
+    "control": {
+      "exposed": 116,
+      "converted": 68.0
+    }
+  },
+  "guided_inference": {
+    "lift": -0.03700189753320666,
+    "ci_low": -0.2472622512811719,
+    "ci_high": 0.1732584562147586,
+    "chance_to_win": 0.36507835615506984
+  },
+  "allocation_check": {
+    "method": "Exact binomial test against 50/50",
+    "p_value": 0.651469090407114
+  },
+  "decision": {
+    "supported_desk": null,
+    "experiment_status": "running"
+  }
+}

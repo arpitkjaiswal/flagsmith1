@@ -1,4 +1,4 @@
-import './experiment-replay.js';
+import { openResults } from './experiment-replay.js';
 import { resetRecovery } from './recovery.js';
 import { claimAnswer, clearPendingAnswer, updateRecord } from './attempt-store.js';
 import { createEventDelivery } from './event-delivery.js';
@@ -181,22 +181,31 @@ function showStorageRetry() {
     $('start').onclick = () => location.reload();
 }
 
+async function rememberPractice() {
+    try {
+        localStorage.setItem(unconfiguredPractice, '1');
+    } catch {
+        // IndexedDB can remember practice when localStorage is blocked.
+    }
+    try {
+        await updateRecord(unconfiguredPractice, () => true);
+    } catch {
+        // A standalone file can also be used with both storage mechanisms disabled.
+    }
+}
+
+$('method').hidden = Boolean(experimentKey);
+$('method').onclick = async () => {
+    if (!experimentKey) await rememberPractice();
+    openResults();
+};
+$('show-experiment').onclick = openResults;
+
 async function begin(forcePractice = false) {
     if (active || starting) return;
     starting = true;
     try {
-        if (!experimentKey && !forcePractice) {
-            try {
-                localStorage.setItem(unconfiguredPractice, '1');
-            } catch {
-                // IndexedDB can remember practice when localStorage is blocked.
-            }
-            try {
-                await updateRecord(unconfiguredPractice, () => true);
-            } catch {
-                // A standalone file can also be played with both storage mechanisms disabled.
-            }
-        }
+        if (!experimentKey && !forcePractice) await rememberPractice();
         let round;
         if (experimentKey && !forcePractice) {
             try {
@@ -248,6 +257,27 @@ function showDelivery(record) {
     $('delivery-status').hidden = !message;
 }
 
+function updateHandoff() {
+    if (!displayed) return;
+    const submitted = answers.find(([value]) => value === displayed.answer);
+    const lines = [
+        'First Minute | Simulated checkout incident',
+        '',
+        'First diagnosis: ' + (submitted ? submitted[1] : 'Time expired before submission.'),
+        $('outcome').textContent,
+        '',
+        'Release 8.4 at 14:04 UTC reduced the connection pool from 40 to 4 per worker.',
+        'Traffic stayed at 97–101 requests/s. Query execution p95 held at 17 ms.',
+        'The 14:07 checkout spent 2,650 of 2,866 ms waiting for a connection.',
+        '',
+        'Recovery model: apply ' + $('connections').value + ' connections per worker at 30 s.',
+        $('capacity-outcome').textContent,
+        'Assumptions: 100 arrivals/s, a 50 ms connection hold time and 600 requests waiting at the change.',
+    ];
+    $('handoff').href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(lines.join('\n') + '\n');
+}
+$('connections').addEventListener('input', updateHandoff);
+
 function displayResult(attempt) {
     clearInterval(interval);
     active = null;
@@ -264,9 +294,20 @@ function displayResult(attempt) {
     $('result').hidden = false;
     const heading = timedOut ? 'Time expired.' : correct ? 'Root cause found.' : 'Look at the connection queue.';
     $('verdict').textContent = heading;
+    const feedback = {
+        traffic:
+            'Traffic held at 97–101 requests per second. The queue grew because release 8.4 cut each worker’s connection pool from 40 to 4.',
+        provider:
+            'Payment authorisation increased by just 4 ms. The slow checkout spent 2,650 ms waiting for a database connection after release 8.4 cut the pool from 40 to 4.',
+    };
+    $('diagnosis-feedback').textContent =
+        feedback[attempt.answer] ??
+        'Release 8.4 cut the connection pool from 40 to 4. Requests waited 2.65 seconds for a connection while queries and payment authorisations stayed fast.';
     resetRecovery();
     $('outcome').textContent =
         seconds + 's elapsed · ' + (attempt.layout === 'guided' ? 'Guided desk' : 'Standard desk');
+    updateHandoff();
+    $('method').hidden = false;
     $('replay').onclick = () => begin(true);
     $('switch-layout').onclick = () => {
         lastLayout = attempt.layout === 'guided' ? 'control' : 'guided';

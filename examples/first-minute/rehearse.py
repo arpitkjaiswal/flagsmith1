@@ -84,7 +84,16 @@ def split_check(metric, reported):
     }
 
 
-def qualified_winner(metric, split_p_value):
+def supported_desk(inference):
+    if inference and inference["chance_to_win"] >= 0.95 and inference["ci_low"] > 0:
+        return "guided"
+    if inference and inference["chance_to_win"] <= 0.05 and inference["ci_high"] < 0:
+        return "control"
+    return None
+
+
+def rehearsal_summary(result, metric_id, experiment_id, rates):
+    metric = metric_result(result or {}, metric_id)
     per_desk = counts(metric)
     if (
         set(per_desk) != set(RATES)
@@ -93,16 +102,24 @@ def qualified_winner(metric, split_p_value):
         raise SystemExit("The rehearsal environment contains unexpected traffic.")
     if any(g["exposed"] < 50 or g["converted"] < 5 for g in per_desk.values()):
         raise SystemExit("The experiment needs more observations.")
-    if split_p_value is None or split_p_value < 0.001:
+    inference = (metric.get("inference") or {}).get("guided")
+    if inference is None:
+        raise SystemExit("Flagsmith has not computed the comparison for the guided desk.")
+    split = split_check(metric, result["payload"]["srm_p_value"])
+    if split["p_value"] < 0.001:
         raise SystemExit("Check the sample ratio before making a rollout decision.")
-    inference = metric["inference"]["guided"]
-    if inference and inference["chance_to_win"] >= 0.95 and inference["ci_low"] > 0:
-        return "guided"
-    if inference and inference["chance_to_win"] <= 0.05 and inference["ci_high"] < 0:
-        return "control"
-    raise SystemExit(
-        "The rehearsal result is inconclusive. Its flag remains at the original split."
-    )
+    return {
+        "traffic": "synthetic",
+        "as_of": result["as_of"],
+        "experiment_id": experiment_id,
+        "flag": "triage_guide",
+        "metric": "drill_resolved",
+        "configured_split": {"control": 50, "guided": 50},
+        "simulated_success_rates": rates,
+        "variants": per_desk,
+        "guided_inference": inference,
+        "allocation_check": split,
+    }
 
 
 def rehearse(org_id):
@@ -117,11 +134,12 @@ def rehearse(org_id):
     else:
         result = request(detail + "results/")["results"]
 
-    measurement = metric_result(result or {}, metric["id"])
-    if set(measurement.get("variants", {})) != set(RATES):
-        raise SystemExit("Flagsmith has not returned both rehearsal variants.")
-    split = split_check(measurement, result["payload"]["srm_p_value"])
-    winner = qualified_winner(measurement, split["p_value"])
+    report = rehearsal_summary(result, metric["id"], experiment["id"], RATES)
+    winner = supported_desk(report["guided_inference"])
+    if winner is None:
+        raise SystemExit(
+            "The rehearsal result is inconclusive. No rollout was applied."
+        )
     if status == "running":
         request(detail + "pause/", {})
         status = "paused"
@@ -167,23 +185,12 @@ def rehearse(org_id):
             method="PATCH",
         )
     checked = sdk("verify", **connection, total=POST_ROLLOUT_CHECKS, winner=winner)
-    return {
-        "traffic": "synthetic",
-        "as_of": result["as_of"],
-        "experiment_id": experiment["id"],
-        "flag": "triage_guide",
-        "metric": "drill_resolved",
-        "configured_split": {"control": 50, "guided": 50},
-        "simulated_success_rates": RATES,
-        "variants": counts(measurement),
-        "guided_inference": measurement["inference"]["guided"],
-        "allocation_check": split,
-        "rollout": {
-            "desk": winner,
-            "percentage": 100,
-            "new_identities_verified": checked["verified"],
-        },
+    report["rollout"] = {
+        "desk": winner,
+        "percentage": 100,
+        "new_identities_verified": checked["verified"],
     }
+    return report
 
 
 if __name__ == "__main__":

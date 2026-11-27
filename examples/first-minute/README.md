@@ -4,15 +4,15 @@ A 60-second incident drill that tests whether a short runbook helps people diagn
 
 ![Checkout incident briefing](media/first-minute.png)
 
-[Watch the 35-second captioned walkthrough](media/walkthrough.mp4)
+[Watch the 44-second captioned walkthrough](media/walkthrough.mp4)
 
 ## Play
 
-For a no-install practice round, [download the drill](https://raw.githubusercontent.com/Flagsmith/flagsmith/96a147f90ce18d37e790791a21dc6ad5fefd3295/examples/first-minute/media/first-minute.zip), unzip it and open `first-minute.html`. In the debrief, change the pool size halfway through a simulated incident and see when 600 waiting checkouts clear. **How this round was counted** shows the desk and the SDK event receipts for a participant, or why a practice round was excluded.
+For a no-install practice round, [download the drill](https://raw.githubusercontent.com/arpitkjaiswal/flagsmith1/main/examples/first-minute/media/first-minute.zip), unzip it and open `first-minute.html`. In the debrief, change the pool size halfway through a simulated incident and see when 600 waiting checkouts clear. Download the incident handoff to take away your diagnosis, the observed timings and your selected recovery plan. **How this round was counted** shows the desk and the SDK event receipts for a participant, or why a practice round was excluded.
 
 To run from source, run `npm ci` and `npm run dev` with Node 24. Open the address Vite prints. Without a client-side environment key, the drill runs in practice mode. To make a portable, offline copy, run `npm run build:practice` and open `dist/first-minute.html`. Finish a round and choose **Try the other desk** to compare the layouts.
 
-The download is pinned to the commit that packaged it. Its SHA-256 is `aaf5a009cb65b4c8f1bf0d75adf71908beabb2cf8ac5d060b6f89a7dc2689f01`. To reproduce `media/first-minute.zip`, run `npm run package:practice` with Node 24 and Python 3 installed. When publishing a new archive, update both README links to its commit and record its checksum here.
+The published practice file is reproducible. Its SHA-256 is `012c27b4ec257629302a421bc7a51a4f084ee2d2a4d15918aedaa5f40c0d6c3c`. To reproduce `media/first-minute.zip`, run `npm run package:practice` with Node 24 and Python 3 installed. When publishing a new archive, update both README links to its commit and record its checksum here.
 
 ## Run the experiment locally
 
@@ -33,33 +33,53 @@ The browser saves the first answer before showing the solution. If the participa
 
 The participant site retries interrupted exposures and correct first-answer events with the original identity, variation and timestamps. When Flagsmith accepts an event, its receipt ends the retry. Flagsmith rejects events older than ten days. If its receipt reports that the delivery window has closed, the drill keeps the local result and tells the player. The warehouse counts exposed identities and whether each one resolved the drill. Replaying the same event after a lost acknowledgement preserves those counts.
 
-**Evidence.** A separate automated run against local Flagsmith recorded three exposures and two conversions in the QA environment. The checked-in Playwright suite intercepts SDK requests to test browser behaviour. The in-app **Experiment replay** uses warehouse results from 240 synthetic identities that the rehearsal script sent through the SDK to local Flagsmith. [QA snapshot](verification.json) · [Rehearsal results](rehearsal.json)
+**Evidence.** A separate automated run against local Flagsmith recorded three exposures and two conversions in the QA environment. The checked-in Playwright suite intercepts SDK requests to test browser behaviour. The in-app **Experiment replay** shows two separate 240-identity synthetic experiments measured by the SDK and local Flagsmith warehouse. Participants can open the replay after their first verdict. Opening the replay on the practice site records a practice visit for that origin. [QA snapshot](verification.json) · [Rehearsal results](rehearsal.json)
 
 **Rollout.** Collect independent participant attempts and inspect sample-ratio warnings. Flagsmith shows “Collecting data” below its inference thresholds. Once sufficient evidence supports a decision, end the participant experiment and use the same flag to roll out the selected desk. If the evidence stays inconclusive, continue collecting data.
 
-## Replay the Flagsmith experiment
+## Two experiment decisions
 
-Open **Experiment replay** in the drill. Assignment shows how the multivariate flag split 240 simulated identities. Results compares 83 conversions from 114 guided attempts with 54 from 126 standard attempts. The script programmed a 72% success chance for guided and 45% for standard. Flagsmith calculated the conversion rates, relative lift and win probability for this synthetic sample. Human outcomes are measured in the **Participant drill** environment.
+Select **Experiment replay** to compare two synthetic runs from 26 November 2026. In each run 240 stable identities received a desk from the real SDK. Both used the same 60-second resolution metric. The generator sets the probability of a correct diagnosis. Flagsmith computes the observed results.
 
-Rollout shows what happened after the synthetic experiment closed. The same `triage_guide` flag was set to 100% guided in **Synthetic rollout rehearsal**. All 16 post-rollout SDK checks received the guided desk outside the experiment. The replay and its downloadable data work offline.
+| Synthetic input | Standard desk | Guided desk | 95% interval for guided relative lift | What happened |
+| --- | ---: | ---: | ---: | --- |
+| Standard 45%, guided 72% | 53/127 (41.7%) | 85/113 (75.2%) | +38.4% to +122.1% | Shipped guided in the rehearsal. All 16 fresh SDK identities received it. |
+| Both desks 55% | 68/116 (58.6%) | 70/124 (56.5%) | −24.7% to +17.3% | Neither desk met the decision threshold. Flagsmith still served a 50/50 experiment. |
 
-![Completed synthetic experiment in the native Flagsmith dashboard](media/flagsmith-results.png)
+The percentage-point gap in the first run was +33.5 points. Relative lift divides that difference by the standard desk's resolution rate. The equal-chance run shows how ordinary sample variation can put one desk ahead even when the two input probabilities are identical. These runs exercise the measurement and rollout path. The effect on people is an open question. [Programmed-advantage data](rehearsal.json) · [Equal-chance data](equal-chance.json)
 
-To reproduce the capture, run the following from this directory against the local Flagsmith instance. It accepts the same sign-in and optional organisation ID as the participant setup.
+![Programmed-advantage run in Flagsmith](media/flagsmith-results.png)
+
+The original dashboard capture recommended control at 63% in the equal-chance run. First Minute kept the split. The fork’s dashboard fix applies the documented 95% probability threshold and suppresses the recommendation during a sample-ratio mismatch. [Original dashboard capture](media/equal-chance-results.png) · [Focused dashboard change](https://github.com/arpitkjaiswal/flagsmith1/commit/08edb17e2c53c0bf24647cd8cf688002efd21ac2)
+
+### Reproduce the evidence
+
+From this directory, run the two local rehearsals. They accept the same sign-in and optional organisation ID as the participant setup. The local API defaults to port 8000. Set `FLAGSMITH_LOCAL_PORT` for the Python commands and Vite if you use another loopback port.
 
 ```sh
 python3 rehearse.py
+python3 equal_chance.py
 ```
 
-This command provisions the dedicated rehearsal environment. It sends seeded traffic through the JavaScript SDK, waits for the warehouse counts to match, and uses the Flagsmith results to select a desk. Results refreshes respect the server's five-minute cooldown. The script pauses enrolment before closing the rehearsal and updating the environment default. Each run against a completed rehearsal verifies the rollout with 16 fresh identities. The JSON contains aggregate evidence only. The allocation check uses an exact two-sided binomial test against 50/50 when Flagsmith leaves its sample-ratio statistic empty.
+Each command provisions its own environment and outputs aggregate JSON. Stable identifiers make retries count towards the same sample. Each command waits for the warehouse counts to match the SDK and respects the five-minute refresh limit. When Flagsmith omits an allocation p-value, the rehearsals apply a two-sided exact binomial check against 50/50.
 
-The [captured JSON](rehearsal.json) drives the replay. To replace it after your own successful run, save the command output to a temporary file, then move it to `rehearsal.json`. The dashboard capture is a separate image taken from the original run shown here.
+The rollout rule requires at least 50 identities and five successes per desk, a split-check p-value of at least 0.001, at least 95% chance for a desk to beat the other and a 95% relative-lift interval entirely on the winning side of zero. Only the programmed-advantage rehearsal may promote a desk. The equal-chance check reads the split back from Flagsmith and records any apparent winner as a diagnostic. The replay includes each original dashboard capture and a download of the corresponding warehouse summary.
+
+### Report a participant run
+
+In the **Participant drill** environment, refresh the results in the Flagsmith dashboard. Then export a shareable Markdown report using the same local credentials.
+
+```sh
+python3 participant_report.py > participant-results.md
+```
+
+This command reads the participant experiment's own metric, timestamp, per-desk counts, success rates and native inference. It reports missing data and failed refreshes explicitly. It makes no rollout changes.
 
 ## Browser checks
 
 Run `npx playwright install chromium` once, then `npm test`. To use an existing Chromium installation, set `CHROMIUM_EXECUTABLE` to its path. The browser tests intercept SDK traffic locally and cover simultaneous submissions, interrupted connections, keyboard navigation, timeouts and practice exclusions. The rehearsal command above exercises the real API and warehouse.
 
-With pytest installed, run `python3 -m pytest tests/test_rehearsal.py` to check recovery when Flagsmith asks the rehearsal to wait before refreshing results.
+With pytest installed, run `python3 -m pytest tests` for the experiment setup, rehearsal and participant-report checks.
 
 ## Submission copy
 

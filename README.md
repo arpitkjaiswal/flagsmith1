@@ -1,3 +1,15 @@
+# First Minute
+
+**Team MetaEarth · Toggle Wars · Track 01: Test Something Real**
+
+A checkout starts timing out after a release. Take the on-call desk, read the signals and choose a diagnosis within 60 seconds. Flagsmith assigns a standard desk or a desk with a three-step runbook and measures the first correct diagnosis.
+
+[Play the offline drill](https://raw.githubusercontent.com/arpitkjaiswal/flagsmith1/main/examples/first-minute/media/first-minute.zip) · [Watch the demo](examples/first-minute/media/walkthrough.mp4) · [Project README and reproduction steps](examples/first-minute/README.md)
+
+Two synthetic experiments ran through the Flagsmith SDK and warehouse on 26 November 2026. With a programmed advantage, guided resolved 85 of 113 drills and standard resolved 53 of 127. The same flag served guided to all 16 fresh identities after rollout. With equal success chances, guided resolved 70 of 124 and standard resolved 68 of 116. The 95% interval included zero and the flag kept its 50/50 split. [Programmed-advantage data](examples/first-minute/rehearsal.json) · [Equal-chance data](examples/first-minute/equal-chance.json)
+
+Unzip the download and open `first-minute.html`. Select **Experiment replay** to inspect both decisions, or start a practice round. The fork also includes the upstream Flagsmith platform below.
+
 [![Feature Flag, Remote Config and A/B Testing platform, Flagsmith](static-files/flagsmith-cover.png)](https://www.flagsmith.com/)
 
 [![Stars](https://img.shields.io/github/stars/flagsmith/flagsmith)](https://github.com/Flagsmith/flagsmith/stargazers)
@@ -36,14 +48,6 @@ If you want a step-by-step demonstration of how to get started with Flagsmith, w
   <a href="https://www.flagsmith.com/demo">
   <img width="75%" height="75%" src="static-files/ReadMe_Demo.gif" alt="Try our interactive demo">
 </p>
-
-### First Minute incident drill
-
-Play the on-call engineer for 60 seconds. Inspect a checkout outage, submit a diagnosis, then adjust the connection pool to see how it affects the queue. The example uses Flagsmith to test whether a three-step runbook improves first-attempt diagnoses.
-
-[Download the offline drill](https://raw.githubusercontent.com/Flagsmith/flagsmith/96a147f90ce18d37e790791a21dc6ad5fefd3295/examples/first-minute/media/first-minute.zip) · [Watch the walkthrough](examples/first-minute/media/walkthrough.mp4) · [See the Flagsmith results](examples/first-minute/media/flagsmith-results.png) · [Run the live experiment](examples/first-minute/README.md)
-
-Unzip the download and open `first-minute.html` in a browser. Practice rounds run entirely on your device. Select **Experiment replay** to inspect the synthetic results and the verified flag rollout.
 
 ## Get up and running with Flagsmith in less than a minute:
 
