@@ -19,7 +19,7 @@ const ExperimentRecommendation: FC<ExperimentRecommendationProps> = ({
     [experiment, results],
   )
 
-  if (!summary) return null
+  if (!summary?.recommendRollout) return null
 
   if (summary.controlWins) {
     return (

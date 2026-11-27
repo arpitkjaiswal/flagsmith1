@@ -244,6 +244,13 @@ export const getWinningVariant = (
 
 export type LiftTone = 'success' | 'danger' | 'neutral'
 
+export const hasSampleRatioMismatch = (
+  results?: BayesianResultsSummary,
+): boolean => {
+  const p = results?.srm_p_value
+  return p != null && p < 0.001
+}
+
 export type SummaryStats = {
   winnerName: string
   winnerColour: string
@@ -251,6 +258,7 @@ export type SummaryStats = {
   controlWins: boolean
   chanceToBest: string
   chanceToBestHigh: boolean
+  recommendRollout: boolean
   liftLabel: string
   liftValue: string
   liftTone: LiftTone
@@ -294,6 +302,8 @@ export const deriveSummary = (
     liftLabel: winner.isControl ? 'Control vs best variant' : 'Lift vs control',
     liftTone,
     liftValue: lift !== null ? formatLiftPct(lift) : 'Baseline',
+    recommendRollout:
+      winner.chanceToWin >= 0.95 && !hasSampleRatioMismatch(results),
     winnerColour: winnerIdentity?.colour ?? '',
     winnerName: winner.name,
   }

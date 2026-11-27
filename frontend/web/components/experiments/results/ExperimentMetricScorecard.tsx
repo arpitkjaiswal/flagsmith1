@@ -7,6 +7,7 @@ import {
   getMetricResult,
   getVariantIdentities,
   getWinningVariant,
+  hasSampleRatioMismatch,
 } from './derive'
 import ExperimentResultsAxisChart from './ExperimentResultsAxisChart'
 import ExperimentResultsScorecardTable from './ExperimentResultsScorecardTable'
@@ -31,8 +32,7 @@ const ExperimentMetricScorecard: FC<ExperimentMetricScorecardProps> = ({
       metric && results ? getMetricResult(results, metric.metric) : undefined,
     [metric, results],
   )
-  const srmBroken =
-    !!results && results.srm_p_value !== null && results.srm_p_value < 0.001
+  const srmBroken = hasSampleRatioMismatch(results)
 
   const winner = useMemo(
     () => (metricResult ? getWinningVariant(metricResult, identities) : null),
