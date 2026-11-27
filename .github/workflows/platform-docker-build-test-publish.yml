@@ -35,7 +35,20 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: Build the OSS image from this commit
-        run: docker build --target oss-unified --tag first-minute-flagsmith:ci .
+        run: |
+          if docker build --progress plain --target oss-unified --tag first-minute-flagsmith:ci . > "$RUNNER_TEMP/first-minute-build.log" 2>&1; then
+            cat "$RUNNER_TEMP/first-minute-build.log"
+          else
+            cat "$RUNNER_TEMP/first-minute-build.log"
+            python3 - <<'PY'
+          import os
+          from pathlib import Path
+          lines = (Path(os.environ["RUNNER_TEMP"]) / "first-minute-build.log").read_text().splitlines()
+          message = "\n".join(lines[-30:]).replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+          print(f"::error title=OSS image build failed::{message}")
+          PY
+            exit 1
+          fi
 
       - name: Start the reusable experiment lab
         run: |

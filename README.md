@@ -12,7 +12,7 @@ docker compose up --build --wait
 
 Open the drill at `http://localhost:5173`. The Flagsmith dashboard runs at `http://localhost:8000`. To print the generated local login, run `docker compose exec flagsmith python /lab/lab.py credentials`. [Setup, verification and reuse](examples/first-minute/README.md)
 
-[Play the offline drill](https://raw.githubusercontent.com/arpitkjaiswal/flagsmith1/8721dad5f699546cb87108ecdafafca8d030f5c6/examples/first-minute/media/first-minute.zip) · [Watch the demo](examples/first-minute/media/walkthrough.mp4) · [Project README and reproduction steps](examples/first-minute/README.md)
+[Play the public demo](https://arpitkjaiswal.github.io/flagsmith1/) · [Watch the demo](https://arpitkjaiswal.github.io/flagsmith1/walkthrough.mp4) · [Project README and reproduction steps](examples/first-minute/README.md)
 
 Two synthetic experiments ran through the Flagsmith SDK and warehouse on 26 November 2026. With a programmed advantage, guided resolved 85 of 113 drills and standard resolved 53 of 127. The same flag served guided to all 16 fresh identities after rollout. With equal success chances, guided resolved 70 of 124 and standard resolved 68 of 116. The 95% interval included zero and the flag kept its 50/50 split. [Programmed-advantage data](examples/first-minute/rehearsal.json) · [Equal-chance data](examples/first-minute/equal-chance.json)
 

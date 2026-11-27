@@ -71,3 +71,10 @@ jobs:
       - uses: actions/configure-pages@v5
       - uses: actions/deploy-pages@v4
         id: deployment
+      - name: Verify the published demo and video
+        env:
+          DEMO_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          curl --fail --silent --show-error --retry 8 --retry-all-errors --retry-delay 5 --max-time 15 "$DEMO_URL" -o /tmp/first-minute.html
+          grep -q 'First Minute' /tmp/first-minute.html
+          curl --fail --silent --show-error --head --max-time 15 "${DEMO_URL%/}/walkthrough.mp4"

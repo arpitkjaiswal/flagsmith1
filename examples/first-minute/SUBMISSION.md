@@ -18,7 +18,9 @@ Upload the 84-second captioned video at `media/walkthrough.mp4` to YouTube or Lo
 
 ## Live demo or deployment
 
-The public practice demo is prepared for GitHub Pages at `https://arpitkjaiswal.github.io/flagsmith1/`. Use that URL after the **First Minute public demo** workflow has deployed successfully. The full self-hosted Flagsmith lab is launched with the README's Docker command.
+https://arpitkjaiswal.github.io/flagsmith1/
+
+This hosts the playable practice demo. The full self-hosted Flagsmith lab is launched with the README's Docker command and shown in the video.
 
 ## What did you build, and what problem does it solve?
 
