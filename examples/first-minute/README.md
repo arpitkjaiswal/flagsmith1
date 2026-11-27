@@ -8,7 +8,7 @@ A 60-second incident drill that tests whether a short runbook helps people diagn
 
 ## Play
 
-For a no-install practice round, [download the drill](https://raw.githubusercontent.com/arpitkjaiswal/flagsmith1/main/examples/first-minute/media/first-minute.zip), unzip it and open `first-minute.html`. In the debrief, change the pool size halfway through a simulated incident and see when 600 waiting checkouts clear. Download the incident handoff to take away your diagnosis, the observed timings and your selected recovery plan. **How this round was counted** shows the desk and the SDK event receipts for a participant, or why a practice round was excluded.
+For a no-install practice round, [download the drill](https://raw.githubusercontent.com/arpitkjaiswal/flagsmith1/8721dad5f699546cb87108ecdafafca8d030f5c6/examples/first-minute/media/first-minute.zip), unzip it and open `first-minute.html`. In the debrief, change the pool size halfway through a simulated incident and see when 600 waiting checkouts clear. Download the incident handoff to take away your diagnosis, the observed timings and your selected recovery plan. **How this round was counted** shows the desk and the SDK event receipts for a participant, or why a practice round was excluded.
 
 To run from source, run `npm ci` and `npm run dev` with Node 24. Open the address Vite prints. Without a client-side environment key, the drill runs in practice mode. To make a portable, offline copy, run `npm run build:practice` and open `dist/first-minute.html`. Finish a round and choose **Try the other desk** to compare the layouts.
 

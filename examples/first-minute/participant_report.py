@@ -101,8 +101,10 @@ def render_report(status, metric_id, snapshot):
     else:
         lines += [
             "",
-            f"Flagsmith estimates a {inference['chance_to_win']:.1%} chance that guided beats standard. "
-            f"Relative lift: {inference['lift']:+.1%} (95% credible interval {inference['ci_low']:+.1%} to {inference['ci_high']:+.1%}).",
+            (
+                f"Flagsmith estimates a {inference['chance_to_win']:.1%} chance that guided beats standard. "
+                f"Relative lift: {inference['lift']:+.1%} (95% credible interval {inference['ci_low']:+.1%} to {inference['ci_high']:+.1%})."
+            ),
         ]
         desk = supported_desk(inference)
         if desk is None:

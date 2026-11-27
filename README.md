@@ -4,7 +4,7 @@
 
 A checkout starts timing out after a release. Take the on-call desk, read the signals and choose a diagnosis within 60 seconds. Flagsmith assigns a standard desk or a desk with a three-step runbook and measures the first correct diagnosis.
 
-[Play the offline drill](https://raw.githubusercontent.com/arpitkjaiswal/flagsmith1/main/examples/first-minute/media/first-minute.zip) · [Watch the demo](examples/first-minute/media/walkthrough.mp4) · [Project README and reproduction steps](examples/first-minute/README.md)
+[Play the offline drill](https://raw.githubusercontent.com/arpitkjaiswal/flagsmith1/8721dad5f699546cb87108ecdafafca8d030f5c6/examples/first-minute/media/first-minute.zip) · [Watch the demo](examples/first-minute/media/walkthrough.mp4) · [Project README and reproduction steps](examples/first-minute/README.md)
 
 Two synthetic experiments ran through the Flagsmith SDK and warehouse on 26 November 2026. With a programmed advantage, guided resolved 85 of 113 drills and standard resolved 53 of 127. The same flag served guided to all 16 fresh identities after rollout. With equal success chances, guided resolved 70 of 124 and standard resolved 68 of 116. The 95% interval included zero and the flag kept its 50/50 split. [Programmed-advantage data](examples/first-minute/rehearsal.json) · [Equal-chance data](examples/first-minute/equal-chance.json)
 
