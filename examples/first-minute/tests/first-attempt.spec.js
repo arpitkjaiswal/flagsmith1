@@ -523,6 +523,7 @@ test('a participant sees both rehearsal decisions only after their first diagnos
     await expect(page.locator('#mode')).toHaveText('Connected to Flagsmith');
     await expect(page.locator('#method')).toBeHidden();
     await page.locator('#start').click();
+    await expect(page.locator('#desk')).toBeVisible();
     await page.reload();
     await expect(page.locator('#desk')).toBeVisible();
     await expect(page.locator('#method')).toBeHidden();

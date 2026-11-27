@@ -1,8 +1,16 @@
 # First Minute
 
-**Team MetaEarth · Toggle Wars · Track 01: Test Something Real**
+**Team MetaEarth · Toggle Wars · Track 03 — Build on Open Source Flagsmith**
 
-A checkout starts timing out after a release. Take the on-call desk, read the signals and choose a diagnosis within 60 seconds. Flagsmith assigns a standard desk or a desk with a three-step runbook and measures the first correct diagnosis.
+First Minute is a self-hosted runbook experiment lab. One Docker Compose command brings up Flagsmith, PostgreSQL, its event worker and a 60-second incident drill. Flagsmith assigns a standard desk or a three-step runbook and measures the first correct diagnosis. Reusable commands verify the SDK against the warehouse, rehearse a rollout and export participant results.
+
+```sh
+git clone https://github.com/arpitkjaiswal/flagsmith1.git
+cd flagsmith1/examples/first-minute
+docker compose up --build --wait
+```
+
+Open the drill at `http://localhost:5173`. The Flagsmith dashboard runs at `http://localhost:8000`. To print the generated local login, run `docker compose exec flagsmith python /lab/lab.py credentials`. [Setup, verification and reuse](examples/first-minute/README.md)
 
 [Play the offline drill](https://raw.githubusercontent.com/arpitkjaiswal/flagsmith1/8721dad5f699546cb87108ecdafafca8d030f5c6/examples/first-minute/media/first-minute.zip) · [Watch the demo](examples/first-minute/media/walkthrough.mp4) · [Project README and reproduction steps](examples/first-minute/README.md)
 

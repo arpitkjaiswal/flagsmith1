@@ -1,10 +1,62 @@
 # First Minute
 
-A 60-second incident drill that tests whether a short runbook helps people diagnose a checkout outage. Participants inspect a release log, service metrics and request traces, choose one diagnosis, and see where the slow request spent its time.
+A self-hosted runbook experiment lab for on-call teams and developers learning Flagsmith. Participants have 60 seconds to inspect a release log, service metrics and request traces, choose one diagnosis, and see where the slow request spent its time. The lab measures whether a short runbook helps them diagnose the outage.
+
+**Toggle Wars · Track 03 — Build on Open Source Flagsmith**
 
 ![Checkout incident briefing](media/first-minute.png)
 
 [Watch the 44-second captioned walkthrough](media/walkthrough.mp4)
+
+## Start the complete lab
+
+Install Docker with Docker Compose, then run these commands.
+
+```sh
+git clone https://github.com/arpitkjaiswal/flagsmith1.git
+cd flagsmith1/examples/first-minute
+docker compose up --build --wait
+```
+
+Open the drill at `http://localhost:5173` and the Flagsmith dashboard at `http://localhost:8000`. Print the generated dashboard login in your terminal.
+
+```sh
+docker compose exec flagsmith python /lab/lab.py credentials
+```
+
+Compose starts PostgreSQL, migrates Flagsmith, creates a local account and project, configures the dashboard to read local feature flags, starts the task processor, and provisions the participant experiment through the management API. It then builds the sample app with its client-side environment key. The browser uses the app's SDK proxy. Management credentials stay in a separate Docker volume.
+
+The default Flagsmith image is pinned to a digest. GitHub Actions also builds the OSS image from this fork and runs the same lab against it. The local stack needs no cloud account or external warehouse. Its published ports bind to `127.0.0.1`, and its database settings are for local development.
+
+If those ports are occupied, set `FIRST_MINUTE_API_PORT` and `FIRST_MINUTE_APP_PORT` before starting Compose. Use the same values for later Compose commands.
+
+```sh
+export FIRST_MINUTE_API_PORT=18000 FIRST_MINUTE_APP_PORT=15173
+docker compose up --build --wait
+```
+
+Stop the lab with `docker compose stop`. The named volumes preserve the account, flags, experiment and results. Starting it again reuses that state.
+
+## Verify and reuse it
+
+These commands run inside the toolkit container, so Docker is the only host dependency.
+
+```sh
+# Compare real SDK assignments and conversions with the Flagsmith warehouse.
+docker compose run --rm tools verify > equal-chance-results.json
+
+# Exercise the evidence rule, roll out a supported desk, and verify 16 new identities.
+docker compose run --rm tools rehearse > rollout-results.json
+
+# Export the participant experiment's current warehouse snapshot.
+docker compose run --rm tools report > participant-results.md
+```
+
+The verification uses 240 scripted identities with the same success probability in each desk. It checks the actual Flagsmith counts and that the experiment keeps its 50/50 split. The rollout rehearsal uses different programmed success rates and requires sufficient evidence before changing its flag. Each runs in its own environment. Results refresh asynchronously and can take several minutes.
+
+For an on-call workshop, share the drill with people who can reach your deployment and inspect **Participant drill** in the dashboard. For a new incident exercise, start with the evidence in `index.html`, the answer explanations in `main.js` and the recovery model in `recovery.js`. The browser already handles stable identities, concurrent tabs, first-answer persistence, exposure events, conversion receipts and interrupted delivery.
+
+To integrate an existing app, use `setup_experiment.py` to see the management API calls for a multivariate flag, metric, warehouse connection and experiment. `rehearsal-traffic.js` shows the SDK assignment and event calls. `participant_report.py` exports the native experiment results. Keep the measurement matched to the hypothesis when adapting the sample.
 
 ## Play
 
@@ -14,7 +66,7 @@ To run from source, run `npm ci` and `npm run dev` with Node 24. Open the addres
 
 The published practice file is reproducible. Its SHA-256 is `012c27b4ec257629302a421bc7a51a4f084ee2d2a4d15918aedaa5f40c0d6c3c`. To reproduce `media/first-minute.zip`, run `npm run package:practice` with Node 24 and Python 3 installed. When publishing a new archive, update both README links to its commit and record its checksum here.
 
-## Run the experiment locally
+## Connect an existing local Flagsmith instance
 
 1. From the repository root, run `docker compose up -d`. Open `http://localhost:8000`, sign in and create an organisation if this is a fresh install. The supplied Compose file enables Experimentation and stores SDK events in PostgreSQL.
 2. From `examples/first-minute`, run `python3 setup_experiment.py` in a terminal. Sign in with your local Flagsmith email and password. If your account belongs to several organisations, the script lists their names and IDs so you can rerun it with the chosen ID. It creates or reuses the First Minute project, Participant drill environment, warehouse connection, flag, metric and experiment. Copy the two printed `VITE_` lines into `.env.local`. For unattended setup, provide your local user token in `FLAGSMITH_MANAGEMENT_TOKEN` and run `python3 setup_experiment.py ORGANISATION_ID`.

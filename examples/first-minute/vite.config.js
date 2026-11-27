@@ -6,7 +6,9 @@ export default defineConfig({
         port: 5173,
         proxy: {
             '^/api/v1/(flags|identities|events)(/|\\?|$)': {
-                target: `http://127.0.0.1:${Number(process.env.FLAGSMITH_LOCAL_PORT ?? 8000)}`,
+                target:
+                    process.env.FLAGSMITH_PROXY_ORIGIN ??
+                    `http://127.0.0.1:${Number(process.env.FLAGSMITH_LOCAL_PORT ?? 8000)}`,
                 changeOrigin: true,
             },
         },

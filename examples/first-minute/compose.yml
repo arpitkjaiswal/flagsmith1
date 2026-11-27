@@ -1,0 +1,134 @@
+name: first-minute
+
+x-flagsmith-image: &flagsmith-image first-minute-flagsmith:local
+
+# Local development credentials. Published ports bind to the loopback interface.
+x-flagsmith-env: &flagsmith-env
+  DATABASE_URL: postgresql://firstminute:firstminute@postgres:5432/firstminute
+  DJANGO_SECRET_KEY: first-minute-local-development
+  WAREHOUSE_CREDENTIALS_SECRET: first-minute-local-warehouse
+  DJANGO_ALLOWED_HOSTS: '*'
+  FLAGSMITH_DOMAIN: localhost:${FIRST_MINUTE_API_PORT:-8000}
+  FIRST_MINUTE_API_PORT: ${FIRST_MINUTE_API_PORT:-8000}
+  EXPERIMENTATION_ENABLED: 'true'
+  USE_POSTGRES_FOR_ANALYTICS: 'true'
+  TASK_RUN_METHOD: TASK_PROCESSOR
+  ENVIRONMENT: production
+
+services:
+  postgres:
+    image: postgres:15.5-alpine
+    environment:
+      POSTGRES_USER: firstminute
+      POSTGRES_PASSWORD: firstminute
+      POSTGRES_DB: firstminute
+    volumes:
+      - database:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U firstminute -d firstminute']
+      interval: 2s
+      timeout: 2s
+      retries: 30
+
+  migrate:
+    image: *flagsmith-image
+    pull_policy: never
+    command: migrate
+    environment: *flagsmith-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  bootstrap:
+    image: *flagsmith-image
+    pull_policy: never
+    user: root
+    entrypoint: ['python', '/lab/lab.py', 'bootstrap']
+    environment:
+      <<: *flagsmith-env
+      ALLOW_ADMIN_INITIATION_VIA_CLI: 'true'
+    volumes:
+      - credentials:/state
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  flagsmith:
+    image: *flagsmith-image
+    build:
+      context: .
+      dockerfile: Dockerfile.flagsmith
+      args:
+        FLAGSMITH_IMAGE: ${FIRST_MINUTE_FLAGSMITH_IMAGE:-flagsmith/flagsmith@sha256:88671e65e7ca62ed971b0fc3fb392c47993d92515833cf6899db77b90014b0e3}
+    entrypoint: ['python', '/lab/lab.py', 'serve-flagsmith']
+    environment: *flagsmith-env
+    volumes:
+      - credentials:/state:ro
+    ports:
+      - '127.0.0.1:${FIRST_MINUTE_API_PORT:-8000}:8000'
+    depends_on:
+      bootstrap:
+        condition: service_completed_successfully
+
+  worker:
+    image: *flagsmith-image
+    pull_policy: never
+    command: run-task-processor
+    environment: *flagsmith-env
+    depends_on:
+      bootstrap:
+        condition: service_completed_successfully
+
+  configure:
+    image: *flagsmith-image
+    pull_policy: never
+    user: root
+    network_mode: service:flagsmith
+    entrypoint: ['python', '/lab/lab.py', 'configure']
+    environment:
+      FIRST_MINUTE_API_PORT: ${FIRST_MINUTE_API_PORT:-8000}
+    volumes:
+      - credentials:/state:ro
+      - configuration:/configuration
+    depends_on:
+      flagsmith:
+        condition: service_healthy
+
+  app:
+    build: .
+    image: first-minute-toolkit:local
+    environment:
+      FLAGSMITH_PROXY_ORIGIN: http://flagsmith:8000
+    volumes:
+      - configuration:/configuration:ro
+    ports:
+      - '127.0.0.1:${FIRST_MINUTE_APP_PORT:-5173}:8080'
+    healthcheck:
+      test: ['CMD', 'node', '-e', 'fetch("http://127.0.0.1:8080").then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))']
+      interval: 3s
+      timeout: 3s
+      retries: 30
+      start_period: 10s
+    depends_on:
+      configure:
+        condition: service_completed_successfully
+
+  tools:
+    profiles: [tools]
+    build: .
+    image: first-minute-toolkit:local
+    network_mode: service:flagsmith
+    entrypoint: ['python3', 'lab.py']
+    command: verify
+    volumes:
+      - credentials:/state:ro
+    depends_on:
+      configure:
+        condition: service_completed_successfully
+      worker:
+        condition: service_healthy
+
+volumes:
+  database:
+  credentials:
+  configuration:

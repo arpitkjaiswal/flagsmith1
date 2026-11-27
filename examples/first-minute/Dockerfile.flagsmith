@@ -1,0 +1,3 @@
+ARG FLAGSMITH_IMAGE=flagsmith/flagsmith@sha256:88671e65e7ca62ed971b0fc3fb392c47993d92515833cf6899db77b90014b0e3
+FROM ${FLAGSMITH_IMAGE}
+COPY --chmod=755 lab.py setup_experiment.py /lab/
