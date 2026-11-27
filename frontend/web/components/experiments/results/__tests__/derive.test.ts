@@ -384,6 +384,34 @@ describe('deriveSummary', () => {
     srm_p_value: null,
   })
 
+  it.each<[number, number | null, boolean]>([
+    [0.365, null, false], // control leads with only 63.5% probability
+    [0.9499, null, false], // displayed as 95% after rounding
+    [0.95, null, true],
+    [0.05, null, true], // control reaches the same threshold
+    [0.99, 0.0009, false],
+    [0.99, 0.001, true],
+  ])(
+    'evaluates rollout at chance %d and SRM p-value %s',
+    (chance, p, expected) => {
+      const twoArms = {
+        ...experiment,
+        feature: feature({
+          multivariate_options: [option({ id: 10, key: 'b' })],
+        }),
+      }
+      const sample = results({
+        ...metricResult,
+        inference: {
+          b: { chance_to_win: chance, ci_high: 0.2, ci_low: -0.2, lift: 0 },
+        },
+      })
+      expect(
+        deriveSummary(twoArms, { ...sample, srm_p_value: p })?.recommendRollout,
+      ).toBe(expected)
+    },
+  )
+
   it('summarises the winning treatment with its lift vs control', () => {
     expect(deriveSummary(experiment, results(metricResult))).toMatchObject({
       chanceToBest: '75%',
