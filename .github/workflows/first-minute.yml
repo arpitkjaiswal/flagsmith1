@@ -1,0 +1,49 @@
+name: First Minute
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - examples/first-minute/**
+      - frontend/.nvmrc
+      - .github/workflows/first-minute.yml
+  pull_request:
+    paths:
+      - examples/first-minute/**
+      - frontend/.nvmrc
+      - .github/workflows/first-minute.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  drill:
+    name: Build, test and verify the offline drill
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: examples/first-minute
+
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: examples/first-minute/package-lock.json
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - run: npm ci
+      - run: npm run build
+      - run: python -m pip install pytest
+      - run: python -m pytest -q tests
+      - run: npx playwright install --with-deps chromium
+      - run: npm test
+      - name: Reproduce the published practice download
+        run: |
+          npm run package:practice
+          git diff --exit-code -- media/first-minute.zip

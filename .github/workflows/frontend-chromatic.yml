@@ -26,15 +26,11 @@ jobs:
   chromatic:
     name: Chromatic
     runs-on: ubuntu-latest
-    # Fork PRs (incl. Dependabot) can't read CHROMATIC_PROJECT_TOKEN — GitHub
-    # withholds repo secrets from pull_request runs originating from forks, so
-    # Chromatic would fail with "Missing project token". Skip them here; main's
-    # post-merge push runs Chromatic with full secrets, so coverage isn't lost.
-    if: |
-      github.actor != 'dependabot[bot]'
-      && (github.event_name == 'push' || github.event.pull_request.draft == false)
-      && (github.event_name == 'push'
-        || github.event.pull_request.head.repo.full_name == github.repository)
+    if: github.event_name == 'push' || !github.event.pull_request.draft
+    env:
+      CAN_PUBLISH: >-
+        ${{ secrets.CHROMATIC_PROJECT_TOKEN != '' && github.actor != 'dependabot[bot]' &&
+        (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) }}
 
     defaults:
       run:
@@ -46,7 +42,7 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version-file: frontend/.nvmrc
           cache: npm
@@ -55,7 +51,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Build Storybook locally
+        if: env.CAN_PUBLISH != 'true'
+        run: npm run build-storybook:dev
+
       - name: Publish to Chromatic
+        if: env.CAN_PUBLISH == 'true'
         uses: chromaui/action@v16
         with:
           workingDir: frontend
