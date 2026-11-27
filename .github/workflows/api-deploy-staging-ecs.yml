@@ -15,8 +15,37 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  validate-task-definitions:
+    name: Render staging task (${{ matrix.task }})
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      matrix:
+        include:
+          - task: sdk-api
+            container: flagsmith-api
+          - task: admin-api
+            container: flagsmith-api
+          - task: migration
+            container: flagsmith-api-migration
+          - task: task-processor
+            container: flagsmith-task-processor
+    steps:
+      - uses: actions/checkout@v5
+      - uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: infrastructure/aws/staging/ecs-task-definition-${{ matrix.task }}.json
+          container-name: ${{ matrix.container }}
+          image: flagsmith-api:${{ github.sha }}
+
   deploy-ecs:
+    needs: validate-task-definitions
+    if: github.repository == 'Flagsmith/flagsmith'
     uses: ./.github/workflows/.reusable-deploy-ecs.yml
+    permissions:
+      contents: read
+      id-token: write
     with:
       environment: staging
     secrets: inherit

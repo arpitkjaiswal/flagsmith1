@@ -30,7 +30,7 @@ env:
 
 jobs:
   test:
-    runs-on: depot-ubuntu-latest-16
+    runs-on: ${{ github.repository == 'Flagsmith/flagsmith' && 'depot-ubuntu-latest-16' || 'ubuntu-latest' }}
     name: API Unit Tests
 
     strategy:
@@ -74,6 +74,7 @@ jobs:
         run: make test-coverage
 
       - name: Upload Coverage
+        if: github.repository == 'Flagsmith/flagsmith'
         uses: codecov/codecov-action@v5
         env:
           PYTHON: ${{ matrix.python-version }}

@@ -42,7 +42,16 @@ jobs:
       - run: python -m pip install pytest
       - run: python -m pytest -q tests
       - run: npx playwright install --with-deps chromium
-      - run: npm test
+      - name: Run browser tests
+        run: npm test -- --reporter=github,list --trace=retain-on-failure
+      - name: Save failed browser traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: first-minute-browser-traces
+          path: examples/first-minute/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Reproduce the published practice download
         run: |
           npm run package:practice
