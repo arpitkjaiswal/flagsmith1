@@ -6,7 +6,7 @@ A self-hosted runbook experiment lab for on-call teams and developers learning F
 
 ![Checkout incident briefing](media/first-minute.png)
 
-[Watch the 44-second captioned walkthrough](media/walkthrough.mp4)
+[Watch the 84-second Track 3 walkthrough](media/walkthrough.mp4)
 
 ## Start the complete lab
 

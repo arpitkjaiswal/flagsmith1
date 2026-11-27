@@ -14,11 +14,11 @@ https://github.com/arpitkjaiswal/flagsmith1
 
 ## Demo video
 
-Upload the captioned video in `media/` to YouTube or Loom as public or unlisted, then paste its URL into the form. The submission form requires a video under three minutes.
+Upload the 84-second captioned video at `media/walkthrough.mp4` to YouTube or Loom as public or unlisted, then paste its URL into the form. It shows the Docker stack, local dashboard, a live drill, SDK receipts, verification and rollout.
 
 ## Live demo or deployment
 
-Leave this optional field blank unless a public deployment is available. The README includes a local Docker setup and an offline practice download.
+The public practice demo is prepared for GitHub Pages at `https://arpitkjaiswal.github.io/flagsmith1/`. Use that URL after the **First Minute public demo** workflow has deployed successfully. The full self-hosted Flagsmith lab is launched with the README's Docker command.
 
 ## What did you build, and what problem does it solve?
 

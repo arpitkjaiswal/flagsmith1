@@ -1,0 +1,73 @@
+name: First Minute public demo
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - examples/first-minute/**
+      - .github/workflows/first-minute-pages.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: first-minute-pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      pages-enabled: ${{ steps.pages.outputs.enabled }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: examples/first-minute/package-lock.json
+      - name: Build the public practice demo
+        working-directory: examples/first-minute
+        run: |
+          npm ci
+          npm run build:practice
+          mv dist/first-minute.html dist/index.html
+          cp media/walkthrough.mp4 dist/walkthrough.mp4
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: examples/first-minute/dist
+      - name: Check Pages activation
+        id: pages
+        uses: actions/github-script@v7
+        with:
+          script: |
+            try {
+              const { data } = await github.rest.repos.getPages(context.repo)
+              core.setOutput('enabled', data.build_type === 'workflow')
+              if (data.build_type !== 'workflow') {
+                core.notice('Select GitHub Actions as the Pages source in repository settings, then run this workflow.')
+              }
+            } catch (error) {
+              if (error.status !== 404) throw error
+              core.setOutput('enabled', false)
+              core.notice('The demo artifact is ready. Enable Pages with GitHub Actions in repository settings, then run this workflow.')
+            }
+    permissions:
+      contents: read
+      pages: read
+
+  deploy:
+    needs: build
+    if: needs.build.outputs.pages-enabled == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/configure-pages@v5
+      - uses: actions/deploy-pages@v4
+        id: deployment
